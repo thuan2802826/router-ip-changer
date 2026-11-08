@@ -76,8 +76,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 3
-                  versionName "1.0.2"
+                  versionCode 4
+                  versionName "1.0.3"
               }
 
               buildTypes {
@@ -113,7 +113,7 @@ jobs:
           <shape xmlns:android="http://schemas.android.com/apk/res/android">
               <solid android:color="#0F241A"/>
               <corners android:radius="14dp"/>
-              <stroke android:width="1dp" android:color="#238636"/>
+              <stroke android:width="1.5dp" android:color="#238636"/>
           </shape>
           EOF
 
@@ -235,14 +235,16 @@ jobs:
                       android:fontFamily="monospace"/>
               </LinearLayout>
 
-              <!-- Card 2: IP Moi Sau Khi Doi -->
+              <!-- Card 2: IP Moi Sau Khi Doi (An ban dau, xuat hien kem Animation) -->
               <LinearLayout
+                  android:id="@+id/cardNewIp"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
                   android:orientation="vertical"
                   android:background="@drawable/card_new_bg"
                   android:padding="16dp"
-                  android:layout_marginBottom="16dp">
+                  android:layout_marginBottom="16dp"
+                  android:visibility="gone">
 
                   <LinearLayout
                       android:layout_width="match_parent"
@@ -254,7 +256,7 @@ jobs:
                       <TextView
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:text="✨ ĐỊA CHỈ IP MỚI"
+                          android:text="✨ ĐỊA CHỈ IP MỚI CẤP PHÁT"
                           android:textColor="#3FB950"
                           android:textSize="12sp"
                           android:textStyle="bold"
@@ -265,9 +267,9 @@ jobs:
                       android:id="@+id/tvNewIpv4"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Chờ lệnh đổi IP..."
+                      android:text="Đang nhận diện..."
                       android:textColor="#3FB950"
-                      android:textSize="18sp"
+                      android:textSize="20sp"
                       android:textStyle="bold"
                       android:fontFamily="sans-serif-medium"/>
 
@@ -275,7 +277,7 @@ jobs:
                       android:id="@+id/tvNewIpv6"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="IPv6: Chưa cấp"
+                      android:text="IPv6: Đang lấy..."
                       android:textColor="#7EE787"
                       android:textSize="12sp"
                       android:layout_marginTop="4dp"
@@ -365,6 +367,7 @@ jobs:
           import android.os.Looper;
           import android.util.Base64;
           import android.view.View;
+          import android.widget.LinearLayout;
           import android.widget.ProgressBar;
           import android.widget.ScrollView;
           import android.widget.TextView;
@@ -374,9 +377,7 @@ jobs:
 
           import java.security.cert.X509Certificate;
           import java.text.SimpleDateFormat;
-          import java.util.ArrayList;
           import java.util.Date;
-          import java.util.HashMap;
           import java.util.List;
           import java.util.Locale;
           import java.util.concurrent.TimeUnit;
@@ -385,16 +386,14 @@ jobs:
           import javax.net.ssl.TrustManager;
           import javax.net.ssl.X509TrustManager;
 
-          import okhttp3.Cookie;
-          import okhttp3.CookieJar;
           import okhttp3.FormBody;
-          import okhttp3.HttpUrl;
           import okhttp3.OkHttpClient;
           import okhttp3.Request;
           import okhttp3.Response;
 
           public class MainActivity extends AppCompatActivity {
 
+              private LinearLayout cardNewIp;
               private TextView tvOldIpv4, tvOldIpv6, tvNewIpv4, tvNewIpv6, tvConsoleLog;
               private ScrollView scrollConsole;
               private MaterialButton btnChangeIp;
@@ -402,12 +401,14 @@ jobs:
               private Handler handler = new Handler(Looper.getMainLooper());
               private OkHttpClient client;
               private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+              private String originalIpv4 = "";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
 
+                  cardNewIp = findViewById(R.id.cardNewIp);
                   tvOldIpv4 = findViewById(R.id.tvOldIpv4);
                   tvOldIpv6 = findViewById(R.id.tvOldIpv6);
                   tvNewIpv4 = findViewById(R.id.tvNewIpv4);
@@ -443,23 +444,11 @@ jobs:
                       SSLContext sslContext = SSLContext.getInstance("TLS");
                       sslContext.init(null, trustAll, new java.security.SecureRandom());
 
-                      HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
                       client = new OkHttpClient.Builder()
                           .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAll[0])
                           .hostnameVerifier((hostname, session) -> true)
                           .connectTimeout(4, TimeUnit.SECONDS)
-                          .readTimeout(5, TimeUnit.SECONDS)
-                          .cookieJar(new CookieJar() {
-                              @Override
-                              public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-                                  cookieStore.put(url.host(), cookies);
-                              }
-                              @Override
-                              public List<Cookie> loadForRequest(HttpUrl url) {
-                                  List<Cookie> cookies = cookieStore.get(url.host());
-                                  return cookies != null ? cookies : new ArrayList<>();
-                              }
-                          })
+                          .readTimeout(6, TimeUnit.SECONDS)
                           .build();
                   } catch (Exception e) {
                       e.printStackTrace();
@@ -518,32 +507,34 @@ jobs:
               private void loadInitialIps() {
                   appendLog("Đang nhận diện địa chỉ mạng ban đầu...");
                   new Thread(() -> {
-                      String ipv4 = getIpv4();
+                      originalIpv4 = getIpv4();
                       String ipv6 = getIpv6();
                       handler.post(() -> {
-                          tvOldIpv4.setText(ipv4);
+                          tvOldIpv4.setText(originalIpv4);
                           tvOldIpv6.setText("IPv6: " + ipv6);
                       });
-                      appendLog("Nhận diện mạng hoàn tất. IP: " + ipv4);
+                      appendLog("Nhận diện mạng hoàn tất. IP hiện tại: " + originalIpv4);
                   }).start();
               }
 
               private void changeIp() {
                   btnChangeIp.setEnabled(false);
                   progressBar.setVisibility(View.VISIBLE);
+                  handler.post(() -> cardNewIp.setVisibility(View.GONE));
                   appendLog("Khởi tạo yêu cầu cấp dải IP mới...");
 
                   new Thread(() -> {
                       try {
                           String routerUrl = "https://192.168.1.1";
 
-                          // Phase 1: Authentication (hidden from user)
+                          // Phase 1: Authentication
                           appendLog("Đang kết nối trung tâm điều phối Viettel...");
                           Request r1 = new Request.Builder()
                               .url(routerUrl + "/asp/GetRandCount.asp")
                               .post(new FormBody.Builder().build())
                               .build();
-                          String cnt = client.newCall(r1).execute().body().string().trim();
+                          Response res1 = client.newCall(r1).execute();
+                          String cnt = res1.body().string().replaceAll("[^0-9]", "");
 
                           String pwBase64 = Base64.encodeToString("123456".getBytes(), Base64.NO_WRAP);
                           FormBody loginBody = new FormBody.Builder()
@@ -557,55 +548,108 @@ jobs:
                               .addHeader("Cookie", "Cookie=body:Language:english:id=-1")
                               .post(loginBody)
                               .build();
-                          client.newCall(r2).execute();
+                          Response res2 = client.newCall(r2).execute();
 
-                          // Phase 2: WAN Reset (hidden from user)
+                          String cookieHeader = "";
+                          List<String> setCookies = res2.headers("Set-Cookie");
+                          for (String sc : setCookies) {
+                              if (sc.contains("sid=")) {
+                                  cookieHeader = sc.split(";")[0].trim();
+                                  break;
+                              }
+                          }
+                          if (cookieHeader.isEmpty()) {
+                              for (int i = 0; i < res2.headers().size(); i++) {
+                                  if (res2.headers().name(i).equalsIgnoreCase("Set-Cookie")) {
+                                      String v = res2.headers().value(i);
+                                      if (v.contains("sid=")) {
+                                          cookieHeader = v.split(";")[0].trim();
+                                          break;
+                                      }
+                                  }
+                              }
+                          }
+
+                          // Phase 2: WAN Disconnect
                           appendLog("Đang giải phóng phiên kết nối mạng...");
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                              .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().build())
                               .build();
-                          String t1 = client.newCall(rToken1).execute().body().string().trim();
+                          Response resToken1 = client.newCall(rToken1).execute();
+                          String t1 = resToken1.body().string().replaceAll("[^a-zA-Z0-9]", "");
 
                           String wanDomain = "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1";
                           String setUrl = routerUrl + "/set.cgi?x=" + wanDomain + "&RequestFile=html/bbsp/wan/wan.asp";
 
                           Request rDisable = new Request.Builder()
                               .url(setUrl)
+                              .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().add("x.Enable", "0").add("x.X_HW_Token", t1).build())
                               .build();
                           client.newCall(rDisable).execute();
 
-                          Thread.sleep(2000);
+                          Thread.sleep(2500);
 
-                          // Phase 3: WAN Connect (hidden from user)
+                          // Phase 3: WAN Reconnect
                           appendLog("Đang gửi yêu cầu cấp phát dải IP mới từ Viettel...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                              .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().build())
                               .build();
-                          String t2 = client.newCall(rToken2).execute().body().string().trim();
+                          Response resToken2 = client.newCall(rToken2).execute();
+                          String t2 = resToken2.body().string().replaceAll("[^a-zA-Z0-9]", "");
 
                           Request rEnable = new Request.Builder()
                               .url(setUrl)
+                              .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", t2).build())
                               .build();
                           client.newCall(rEnable).execute();
 
                           appendLog("Đang đồng bộ tuyến truyền dẫn và thông số mạng...");
-                          Thread.sleep(6000);
 
-                          // Phase 4: Retrieve New IP
-                          appendLog("Đang xác thực địa chỉ mạng mới...");
-                          String newIpv4 = getIpv4();
-                          String newIpv6 = getIpv6();
+                          // Phase 4: Wait and Poll until new IP is assigned
+                          String newIpv4 = null;
+                          String newIpv6 = null;
+
+                          for (int attempt = 1; attempt <= 10; attempt++) {
+                              Thread.sleep(2000);
+                              appendLog("Đang kiểm tra tín hiệu trạm mạng Viettel (" + attempt + "/10)...");
+                              String checkIp = getIpv4();
+                              if (!checkIp.equals("Chưa lấy được IP") && !checkIp.equals(originalIpv4)) {
+                                  newIpv4 = checkIp;
+                                  newIpv6 = getIpv6();
+                                  break;
+                              }
+                          }
+
+                          if (newIpv4 == null) {
+                              newIpv4 = getIpv4();
+                              newIpv6 = getIpv6();
+                          }
+
+                          final String finalIpv4 = newIpv4;
+                          final String finalIpv6 = newIpv6;
 
                           handler.post(() -> {
-                              tvNewIpv4.setText(newIpv4);
-                              tvNewIpv6.setText("IPv6: " + newIpv6);
+                              tvNewIpv4.setText(finalIpv4);
+                              tvNewIpv6.setText("IPv6: " + finalIpv6);
+
+                              // Smooth Slide & Fade In Animation
+                              cardNewIp.setAlpha(0f);
+                              cardNewIp.setTranslationY(40f);
+                              cardNewIp.setVisibility(View.VISIBLE);
+                              cardNewIp.animate()
+                                  .alpha(1f)
+                                  .translationY(0f)
+                                  .setDuration(600)
+                                  .start();
                           });
 
-                          appendLog("✅ Thành công! Đã cấp phát dải IP mới: " + newIpv4);
+                          appendLog("✅ Hoàn tất! Đã nhận dải IP mới: " + finalIpv4);
                       } catch (Exception e) {
                           appendLog("❌ Không thể đồng bộ: " + e.getMessage());
                       } finally {
@@ -637,8 +681,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.2
-          name: "Đổi IP Mạng v1.0.2"
+          tag_name: v1.0.3
+          name: "Đổi IP Mạng v1.0.3"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
