@@ -76,8 +76,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 5
-                  versionName "1.0.4"
+                  versionCode 6
+                  versionName "1.0.5"
               }
 
               buildTypes {
@@ -588,10 +588,11 @@ jobs:
                               client.newCall(rDisable).execute().close();
                           } catch (Exception ignored) {}
 
-                          Thread.sleep(2500);
+                          appendLog("Đang yêu cầu trạm Viettel quay vòng dải IP...");
+                          Thread.sleep(6000);
 
-                          // Phase 4: WAN Reconnect (Guaranteed to run)
-                          appendLog("Đang gửi yêu cầu cấp phát dải IP mới từ Viettel...");
+                          // Phase 4: WAN Reconnect
+                          appendLog("Đang kích hoạt đường truyền Internet Viettel...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .addHeader("Cookie", cookieHeader)
@@ -609,15 +610,15 @@ jobs:
                               client.newCall(rEnable).execute().close();
                           } catch (Exception ignored) {}
 
-                          appendLog("Đang đồng bộ tuyến truyền dẫn và thông số mạng...");
+                          appendLog("Đang thương lượng phiên kết nối và nhận diện IP mới...");
 
                           // Phase 5: Wait and Poll until new IP is assigned
                           String newIpv4 = null;
                           String newIpv6 = null;
 
-                          for (int attempt = 1; attempt <= 12; attempt++) {
+                          for (int attempt = 1; attempt <= 15; attempt++) {
                               Thread.sleep(2000);
-                              appendLog("Đang kiểm tra tín hiệu trạm mạng Viettel (" + attempt + "/12)...");
+                              appendLog("Đang kiểm tra tín hiệu trạm mạng Viettel (" + attempt + "/15)...");
                               String checkIp = getIpv4();
                               if (!checkIp.equals("Chưa lấy được IP") && !checkIp.equals(originalIpv4)) {
                                   newIpv4 = checkIp;
@@ -680,8 +681,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.4
-          name: "Đổi IP Mạng v1.0.4"
+          tag_name: v1.0.5
+          name: "Đổi IP Mạng v1.0.5"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
