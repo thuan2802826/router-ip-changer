@@ -25,6 +25,7 @@ jobs:
         run: |
           mkdir -p app/src/main/java/com/example/routerip
           mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
 
           # settings.gradle
@@ -75,8 +76,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 2
-                  versionName "1.0.1"
+                  versionCode 3
+                  versionName "1.0.2"
               }
 
               buildTypes {
@@ -97,6 +98,34 @@ jobs:
           }
           EOF
 
+          # Drawables
+          cat << 'EOF' > app/src/main/res/drawable/card_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+              <solid android:color="#161B22"/>
+              <corners android:radius="14dp"/>
+              <stroke android:width="1dp" android:color="#30363D"/>
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/card_new_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+              <solid android:color="#0F241A"/>
+              <corners android:radius="14dp"/>
+              <stroke android:width="1dp" android:color="#238636"/>
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/terminal_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+              <solid android:color="#080B0F"/>
+              <corners android:radius="12dp"/>
+              <stroke android:width="1dp" android:color="#21262D"/>
+          </shape>
+          EOF
+
           # AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -106,7 +135,7 @@ jobs:
               <application
                   android:allowBackup="true"
                   android:icon="@android:drawable/ic_dialog_info"
-                  android:label="Viettel Network"
+                  android:label="Đổi IP Mạng"
                   android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
                   android:usesCleartextTraffic="true">
                   <activity
@@ -125,133 +154,197 @@ jobs:
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
               android:padding="16dp"
-              android:background="#10131A">
+              android:background="#0D1117">
 
-              <TextView
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:text="VIETTEL NETWORK CHANGER"
-                  android:textColor="#FFFFFF"
-                  android:textSize="18sp"
-                  android:textStyle="bold"
-                  android:gravity="center"
-                  android:layout_marginTop="8dp"
-                  android:layout_marginBottom="16dp"/>
-
+              <!-- App Header -->
               <LinearLayout
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
                   android:orientation="vertical"
-                  android:background="#191F2B"
-                  android:padding="14dp"
-                  android:layout_marginBottom="12dp">
+                  android:gravity="center"
+                  android:paddingTop="12dp"
+                  android:paddingBottom="16dp">
 
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="📍 ĐỊA CHỈ IP BAN ĐẦU"
-                      android:textColor="#FFA726"
-                      android:textSize="13sp"
+                      android:text="🌐 ĐỔI IP MẠNG"
+                      android:textColor="#FFFFFF"
+                      android:textSize="22sp"
                       android:textStyle="bold"
-                      android:layout_marginBottom="6dp"/>
+                      android:letterSpacing="0.03"/>
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Hạ tầng kết nối Viettel Telecom"
+                      android:textColor="#8B949E"
+                      android:textSize="12sp"
+                      android:layout_marginTop="2dp"/>
+              </LinearLayout>
+
+              <!-- Card 1: IP Ban Dau -->
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:background="@drawable/card_bg"
+                  android:padding="16dp"
+                  android:layout_marginBottom="12dp">
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal"
+                      android:gravity="center_vertical"
+                      android:layout_marginBottom="6dp">
+
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="📍 ĐỊA CHỈ IP BAN ĐẦU"
+                          android:textColor="#F2994A"
+                          android:textSize="12sp"
+                          android:textStyle="bold"
+                          android:letterSpacing="0.05"/>
+                  </LinearLayout>
 
                   <TextView
                       android:id="@+id/tvOldIpv4"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="IPv4: Đang kiểm tra..."
-                      android:textColor="#ECEFF1"
-                      android:textSize="15sp"
-                      android:textStyle="bold"/>
+                      android:text="Đang nhận diện mạng..."
+                      android:textColor="#F0F6FC"
+                      android:textSize="18sp"
+                      android:textStyle="bold"
+                      android:fontFamily="sans-serif-medium"/>
 
                   <TextView
                       android:id="@+id/tvOldIpv6"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
                       android:text="IPv6: Đang kiểm tra..."
-                      android:textColor="#90A4AE"
+                      android:textColor="#8B949E"
                       android:textSize="12sp"
-                      android:layout_marginTop="3dp"/>
+                      android:layout_marginTop="4dp"
+                      android:fontFamily="monospace"/>
               </LinearLayout>
 
+              <!-- Card 2: IP Moi Sau Khi Doi -->
               <LinearLayout
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
                   android:orientation="vertical"
-                  android:background="#191F2B"
-                  android:padding="14dp"
+                  android:background="@drawable/card_new_bg"
+                  android:padding="16dp"
                   android:layout_marginBottom="16dp">
 
-                  <TextView
-                      android:layout_width="wrap_content"
+                  <LinearLayout
+                      android:layout_width="match_parent"
                       android:layout_height="wrap_content"
-                      android:text="✨ ĐỊA CHỈ IP MỚI SAU KHI ĐỔI"
-                      android:textColor="#00E676"
-                      android:textSize="13sp"
-                      android:textStyle="bold"
-                      android:layout_marginBottom="6dp"/>
+                      android:orientation="horizontal"
+                      android:gravity="center_vertical"
+                      android:layout_marginBottom="6dp">
+
+                      <TextView
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="✨ ĐỊA CHỈ IP MỚI"
+                          android:textColor="#3FB950"
+                          android:textSize="12sp"
+                          android:textStyle="bold"
+                          android:letterSpacing="0.05"/>
+                  </LinearLayout>
 
                   <TextView
                       android:id="@+id/tvNewIpv4"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="IPv4: Chưa đổi"
-                      android:textColor="#00E676"
-                      android:textSize="15sp"
-                      android:textStyle="bold"/>
+                      android:text="Chờ lệnh đổi IP..."
+                      android:textColor="#3FB950"
+                      android:textSize="18sp"
+                      android:textStyle="bold"
+                      android:fontFamily="sans-serif-medium"/>
 
                   <TextView
                       android:id="@+id/tvNewIpv6"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="IPv6: Chưa đổi"
-                      android:textColor="#81C784"
+                      android:text="IPv6: Chưa cấp"
+                      android:textColor="#7EE787"
                       android:textSize="12sp"
-                      android:layout_marginTop="3dp"/>
+                      android:layout_marginTop="4dp"
+                      android:fontFamily="monospace"/>
               </LinearLayout>
 
-              <Button
+              <!-- Action Button -->
+              <com.google.android.material.button.MaterialButton
                   android:id="@+id/btnChangeIp"
                   android:layout_width="match_parent"
-                  android:layout_height="56dp"
-                  android:text="⚡ BẮT ĐẦU ĐỔI IP"
+                  android:layout_height="58dp"
+                  android:text="⚡ BẮT ĐẦU ĐỔI IP MẠNG"
                   android:textSize="16sp"
                   android:textStyle="bold"
-                  android:backgroundTint="#2979FF"
                   android:textColor="#FFFFFF"
-                  android:layout_marginBottom="12dp"/>
+                  app:cornerRadius="14dp"
+                  app:backgroundTint="#1F6FEB"
+                  android:layout_marginBottom="14dp"/>
 
-              <TextView
-                  android:layout_width="wrap_content"
+              <!-- Running Network Log / Console Section -->
+              <LinearLayout
+                  android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="TIẾN TRÌNH KẾT NỐI MẠNG:"
-                  android:textColor="#78909C"
-                  android:textSize="11sp"
-                  android:textStyle="bold"
-                  android:layout_marginBottom="4dp"/>
+                  android:orientation="horizontal"
+                  android:gravity="center_vertical"
+                  android:layout_marginBottom="6dp">
 
-              <ScrollView
-                  android:id="@+id/scrollConsole"
+                  <TextView
+                      android:layout_width="0dp"
+                      android:layout_height="wrap_content"
+                      android:layout_weight="1"
+                      android:text="TIẾN TRÌNH KẾT NỐI MẠNG"
+                      android:textColor="#8B949E"
+                      android:textSize="11sp"
+                      android:textStyle="bold"
+                      android:letterSpacing="0.05"/>
+
+                  <ProgressBar
+                      android:id="@+id/progressBar"
+                      style="?android:attr/progressBarStyleSmall"
+                      android:layout_width="16dp"
+                      android:layout_height="16dp"
+                      android:visibility="gone"/>
+              </LinearLayout>
+
+              <LinearLayout
                   android:layout_width="match_parent"
                   android:layout_height="0dp"
                   android:layout_weight="1"
-                  android:background="#070A0F"
-                  android:padding="10dp">
+                  android:orientation="vertical"
+                  android:background="@drawable/terminal_bg"
+                  android:padding="12dp">
 
-                  <TextView
-                      android:id="@+id/tvConsoleLog"
+                  <ScrollView
+                      android:id="@+id/scrollConsole"
                       android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:text="> Sẵn sàng kết nối.\n"
-                      android:textColor="#00E676"
-                      android:textSize="12sp"
-                      android:fontFamily="monospace"
-                      android:lineSpacingExtra="3dp"/>
-              </ScrollView>
+                      android:layout_height="match_parent">
+
+                      <TextView
+                          android:id="@+id/tvConsoleLog"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:text="● [Hệ thống] Tuyến mạng Viettel sẵn sàng.\n"
+                          android:textColor="#3FB950"
+                          android:textSize="12sp"
+                          android:fontFamily="monospace"
+                          android:lineSpacingExtra="4dp"/>
+                  </ScrollView>
+              </LinearLayout>
 
           </LinearLayout>
           EOF
@@ -259,7 +352,7 @@ jobs:
           # strings.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Viettel Network</string>
+              <string name="app_name">Đổi IP Mạng</string>
           </resources>
           EOF
 
@@ -271,10 +364,13 @@ jobs:
           import android.os.Handler;
           import android.os.Looper;
           import android.util.Base64;
-          import android.widget.Button;
+          import android.view.View;
+          import android.widget.ProgressBar;
           import android.widget.ScrollView;
           import android.widget.TextView;
           import androidx.appcompat.app.AppCompatActivity;
+
+          import com.google.android.material.button.MaterialButton;
 
           import java.security.cert.X509Certificate;
           import java.text.SimpleDateFormat;
@@ -301,7 +397,8 @@ jobs:
 
               private TextView tvOldIpv4, tvOldIpv6, tvNewIpv4, tvNewIpv6, tvConsoleLog;
               private ScrollView scrollConsole;
-              private Button btnChangeIp;
+              private MaterialButton btnChangeIp;
+              private ProgressBar progressBar;
               private Handler handler = new Handler(Looper.getMainLooper());
               private OkHttpClient client;
               private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
@@ -318,6 +415,7 @@ jobs:
                   tvConsoleLog = findViewById(R.id.tvConsoleLog);
                   scrollConsole = findViewById(R.id.scrollConsole);
                   btnChangeIp = findViewById(R.id.btnChangeIp);
+                  progressBar = findViewById(R.id.progressBar);
 
                   initOkHttpClient();
                   loadInitialIps();
@@ -328,7 +426,7 @@ jobs:
               private void appendLog(String message) {
                   handler.post(() -> {
                       String timestamp = timeFormat.format(new Date());
-                      tvConsoleLog.append("> [" + timestamp + "] " + message + "\n");
+                      tvConsoleLog.append("● [" + timestamp + "] " + message + "\n");
                       scrollConsole.post(() -> scrollConsole.fullScroll(ScrollView.FOCUS_DOWN));
                   });
               }
@@ -418,28 +516,29 @@ jobs:
               }
 
               private void loadInitialIps() {
-                  appendLog("Đang nhận diện tuyến mạng hiện tại...");
+                  appendLog("Đang nhận diện địa chỉ mạng ban đầu...");
                   new Thread(() -> {
                       String ipv4 = getIpv4();
                       String ipv6 = getIpv6();
                       handler.post(() -> {
-                          tvOldIpv4.setText("IPv4: " + ipv4);
+                          tvOldIpv4.setText(ipv4);
                           tvOldIpv6.setText("IPv6: " + ipv6);
                       });
-                      appendLog("Nhận diện mạng hoàn tất. IP hiện tại: " + ipv4);
+                      appendLog("Nhận diện mạng hoàn tất. IP: " + ipv4);
                   }).start();
               }
 
               private void changeIp() {
                   btnChangeIp.setEnabled(false);
-                  appendLog("Khởi tạo yêu cầu đổi dải địa chỉ IP...");
+                  progressBar.setVisibility(View.VISIBLE);
+                  appendLog("Khởi tạo yêu cầu cấp dải IP mới...");
 
                   new Thread(() -> {
                       try {
                           String routerUrl = "https://192.168.1.1";
 
-                          // Phase 1: Authentication (discreet log)
-                          appendLog("Đang kết nối trung tâm định tuyến Viettel...");
+                          // Phase 1: Authentication (hidden from user)
+                          appendLog("Đang kết nối trung tâm điều phối Viettel...");
                           Request r1 = new Request.Builder()
                               .url(routerUrl + "/asp/GetRandCount.asp")
                               .post(new FormBody.Builder().build())
@@ -460,8 +559,8 @@ jobs:
                               .build();
                           client.newCall(r2).execute();
 
-                          // Phase 2: WAN Reset (discreet log)
-                          appendLog("Đang giải phóng phiên kết nối mạng cũ...");
+                          // Phase 2: WAN Reset (hidden from user)
+                          appendLog("Đang giải phóng phiên kết nối mạng...");
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -479,8 +578,8 @@ jobs:
 
                           Thread.sleep(2000);
 
-                          // Phase 3: WAN Connect (discreet log)
-                          appendLog("Đang yêu cầu máy chủ Viettel cấp dải IP mới...");
+                          // Phase 3: WAN Connect (hidden from user)
+                          appendLog("Đang gửi yêu cầu cấp phát dải IP mới từ Viettel...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -493,23 +592,27 @@ jobs:
                               .build();
                           client.newCall(rEnable).execute();
 
-                          appendLog("Đang thiết lập định tuyến và xác nhận địa chỉ mới...");
+                          appendLog("Đang đồng bộ tuyến truyền dẫn và thông số mạng...");
                           Thread.sleep(6000);
 
-                          // Phase 4: Fetch New IPs
+                          // Phase 4: Retrieve New IP
+                          appendLog("Đang xác thực địa chỉ mạng mới...");
                           String newIpv4 = getIpv4();
                           String newIpv6 = getIpv6();
 
                           handler.post(() -> {
-                              tvNewIpv4.setText("IPv4: " + newIpv4);
+                              tvNewIpv4.setText(newIpv4);
                               tvNewIpv6.setText("IPv6: " + newIpv6);
                           });
 
-                          appendLog("✅ Hoàn tất! Đã đổi sang IP mới: " + newIpv4);
+                          appendLog("✅ Thành công! Đã cấp phát dải IP mới: " + newIpv4);
                       } catch (Exception e) {
                           appendLog("❌ Không thể đồng bộ: " + e.getMessage());
                       } finally {
-                          handler.post(() -> btnChangeIp.setEnabled(true));
+                          handler.post(() -> {
+                              btnChangeIp.setEnabled(true);
+                              progressBar.setVisibility(View.GONE);
+                          });
                       }
                   }).start();
               }
@@ -534,8 +637,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.1
-          name: "Doi IP Router v1.0.1"
+          tag_name: v1.0.2
+          name: "Đổi IP Mạng v1.0.2"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
