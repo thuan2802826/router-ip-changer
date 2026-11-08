@@ -326,8 +326,7 @@ jobs:
                       android:id="@+id/tvConsoleLog"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
-                      android:text="• [Hệ thống] Tuyến mạng Viettel sẵn sàng.
-"
+                      android:text="• [Hệ thống] Tuyến mạng Viettel sẵn sàng."
                       android:textColor="#3FB950"
                       android:textSize="12sp"
                       android:fontFamily="monospace"
@@ -410,8 +409,7 @@ jobs:
               private void appendLog(String message) {
                   String time = timeFormat.format(new Date());
                   handler.post(() -> {
-                      tvConsoleLog.append("• [" + time + "] " + message + "
-");
+                      tvConsoleLog.append("\n• [" + time + "] " + message);
                       scrollConsole.post(() -> scrollConsole.fullScroll(View.FOCUS_DOWN));
                   });
               }
