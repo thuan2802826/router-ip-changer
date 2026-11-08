@@ -96,7 +96,7 @@ jobs:
               <application
                   android:allowBackup="true"
                   android:icon="@android:drawable/ic_dialog_info"
-                  android:label="Äá»•i IP Router"
+                  android:label="Đổi IP Router"
                   android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
                   android:usesCleartextTraffic="true">
                   <activity
@@ -135,7 +135,7 @@ jobs:
                   android:id="@+id/tvIp"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="Äang láº¥y IP..."
+                  android:text="Đang lấy IP..."
                   android:textColor="#00E676"
                   android:textSize="16sp"
                   android:gravity="center"
@@ -145,7 +145,7 @@ jobs:
                   android:id="@+id/btnChangeIp"
                   android:layout_width="match_parent"
                   android:layout_height="64dp"
-                  android:text="âš¡ Äá»”I IP (5 GIÃ‚Y)"
+                  android:text="⚡ ĐỔI IP (5 GIÂY)"
                   android:textSize="18sp"
                   android:textStyle="bold"
                   android:backgroundTint="#2979FF"
@@ -155,7 +155,7 @@ jobs:
                   android:id="@+id/tvStatus"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="Sáºµn sÃ ng"
+                  android:text="Sẵn sàng"
                   android:textColor="#B0BEC5"
                   android:textSize="14sp"
                   android:gravity="center"
@@ -167,7 +167,7 @@ jobs:
           # strings.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Äá»•i IP Router</string>
+              <string name="app_name">Đổi IP Router</string>
           </resources>
           EOF
 
@@ -266,14 +266,14 @@ jobs:
                           String ip = response.body().string();
                           handler.post(() -> tvIp.setText("IPv4: " + ip));
                       } catch (Exception e) {
-                          handler.post(() -> tvIp.setText("ChÆ°a láº¥y Ä‘Æ°á»£c IP"));
+                          handler.post(() -> tvIp.setText("Chưa lấy được IP"));
                       }
                   }).start();
               }
 
               private void changeIp() {
                   btnChangeIp.setEnabled(false);
-                  tvStatus.setText("Äang káº¿t ná»‘i tá»›i modem 192.168.1.1...");
+                  tvStatus.setText("Đang kết nối tới modem 192.168.1.1...");
 
                   new Thread(() -> {
                       try {
@@ -287,7 +287,7 @@ jobs:
                           String cnt = client.newCall(r1).execute().body().string().trim();
 
                           // 2. Login
-                          updateStatus("Äang Ä‘Äƒng nháº­p vÃ o router...");
+                          updateStatus("Đang đăng nhập vào router...");
                           String pwBase64 = Base64.encodeToString("123456".getBytes(), Base64.NO_WRAP);
                           FormBody loginBody = new FormBody.Builder()
                               .add("UserName", "admin")
@@ -303,7 +303,7 @@ jobs:
                           client.newCall(r2).execute();
 
                           // 3. Reset PPPoE (Enable=0)
-                          updateStatus("Äang ngáº¯t káº¿t ná»‘i PPPoE...");
+                          updateStatus("Đang ngắt kết nối PPPoE...");
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -322,7 +322,7 @@ jobs:
                           Thread.sleep(2000);
 
                           // 4. Connect PPPoE (Enable=1)
-                          updateStatus("Äang kÃ­ch hoáº¡t PPPoE nháº­n IP má»›i...");
+                          updateStatus("Đang kích hoạt PPPoE nhận IP mới...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -335,13 +335,13 @@ jobs:
                               .build();
                           client.newCall(rEnable).execute();
 
-                          updateStatus("Äang chá» Viettel cáº¥p IP má»›i...");
+                          updateStatus("Đang chờ Viettel cấp IP mới...");
                           Thread.sleep(5000);
 
                           loadCurrentIp();
-                          updateStatus("âœ… Äá»”I IP THÃ€NH CÃ”NG!");
+                          updateStatus("✅ ĐỔI IP THÀNH CÔNG!");
                       } catch (Exception e) {
-                          updateStatus("âŒ Lá»—i: " + e.getMessage());
+                          updateStatus("❌ Lỗi: " + e.getMessage());
                       } finally {
                           handler.post(() -> btnChangeIp.setEnabled(true));
                       }
