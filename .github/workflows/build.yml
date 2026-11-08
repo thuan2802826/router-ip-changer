@@ -1,0 +1,377 @@
+name: Build Router IP Changer APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Generate Android Project
+        run: |
+          mkdir -p app/src/main/java/com/example/routerip
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+
+          # settings.gradle
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "RouterIPChanger"
+          include ':app'
+          EOF
+
+          # build.gradle (root)
+          cat << 'EOF' > build.gradle
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+          }
+          EOF
+
+          # app/build.gradle
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.example.routerip'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId "com.example.routerip"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.11.0'
+              implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+          }
+          EOF
+
+          # AndroidManifest.xml
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <application
+                  android:allowBackup="true"
+                  android:icon="@android:drawable/ic_dialog_info"
+                  android:label="Äá»•i IP Router"
+                  android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
+                  android:usesCleartextTraffic="true">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # layout/activity_main.xml
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:gravity="center"
+              android:padding="24dp"
+              android:background="#121212">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="VIETTEL ROUTER IP CHANGER"
+                  android:textColor="#FFFFFF"
+                  android:textSize="20sp"
+                  android:textStyle="bold"
+                  android:layout_marginBottom="32dp"/>
+
+              <TextView
+                  android:id="@+id/tvIp"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Äang láº¥y IP..."
+                  android:textColor="#00E676"
+                  android:textSize="16sp"
+                  android:gravity="center"
+                  android:layout_marginBottom="32dp"/>
+
+              <Button
+                  android:id="@+id/btnChangeIp"
+                  android:layout_width="match_parent"
+                  android:layout_height="64dp"
+                  android:text="âš¡ Äá»”I IP (5 GIÃ‚Y)"
+                  android:textSize="18sp"
+                  android:textStyle="bold"
+                  android:backgroundTint="#2979FF"
+                  android:textColor="#FFFFFF"/>
+
+              <TextView
+                  android:id="@+id/tvStatus"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:text="Sáºµn sÃ ng"
+                  android:textColor="#B0BEC5"
+                  android:textSize="14sp"
+                  android:gravity="center"
+                  android:layout_marginTop="24dp"/>
+
+          </LinearLayout>
+          EOF
+
+          # strings.xml
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">Äá»•i IP Router</string>
+          </resources>
+          EOF
+
+          # MainActivity.java
+          cat << 'EOF' > app/src/main/java/com/example/routerip/MainActivity.java
+          package com.example.routerip;
+
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.util.Base64;
+          import android.widget.Button;
+          import android.widget.TextView;
+          import androidx.appcompat.app.AppCompatActivity;
+
+          import java.security.cert.X509Certificate;
+          import java.util.ArrayList;
+          import java.util.HashMap;
+          import java.util.List;
+          import java.util.concurrent.TimeUnit;
+
+          import javax.net.ssl.SSLContext;
+          import javax.net.ssl.TrustManager;
+          import javax.net.ssl.X509TrustManager;
+
+          import okhttp3.Cookie;
+          import okhttp3.CookieJar;
+          import okhttp3.FormBody;
+          import okhttp3.HttpUrl;
+          import okhttp3.OkHttpClient;
+          import okhttp3.Request;
+          import okhttp3.Response;
+
+          public class MainActivity extends AppCompatActivity {
+
+              private TextView tvIp, tvStatus;
+              private Button btnChangeIp;
+              private Handler handler = new Handler(Looper.getMainLooper());
+              private OkHttpClient client;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+
+                  tvIp = findViewById(R.id.tvIp);
+                  tvStatus = findViewById(R.id.tvStatus);
+                  btnChangeIp = findViewById(R.id.btnChangeIp);
+
+                  initOkHttpClient();
+                  loadCurrentIp();
+
+                  btnChangeIp.setOnClickListener(v -> changeIp());
+              }
+
+              private void initOkHttpClient() {
+                  try {
+                      TrustManager[] trustAll = new TrustManager[]{
+                          new X509TrustManager() {
+                              public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+                              public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                              public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                          }
+                      };
+                      SSLContext sslContext = SSLContext.getInstance("TLS");
+                      sslContext.init(null, trustAll, new java.security.SecureRandom());
+
+                      HashMap<String, List<Cookie>> cookieStore = new HashMap<>();
+                      client = new OkHttpClient.Builder()
+                          .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAll[0])
+                          .hostnameVerifier((hostname, session) -> true)
+                          .connectTimeout(5, TimeUnit.SECONDS)
+                          .readTimeout(10, TimeUnit.SECONDS)
+                          .cookieJar(new CookieJar() {
+                              @Override
+                              public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+                                  cookieStore.put(url.host(), cookies);
+                              }
+                              @Override
+                              public List<Cookie> loadForRequest(HttpUrl url) {
+                                  List<Cookie> cookies = cookieStore.get(url.host());
+                                  return cookies != null ? cookies : new ArrayList<>();
+                              }
+                          })
+                          .build();
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  }
+              }
+
+              private void loadCurrentIp() {
+                  new Thread(() -> {
+                      try {
+                          Request request = new Request.Builder().url("https://api.ipify.org").build();
+                          Response response = new OkHttpClient().newCall(request).execute();
+                          String ip = response.body().string();
+                          handler.post(() -> tvIp.setText("IPv4: " + ip));
+                      } catch (Exception e) {
+                          handler.post(() -> tvIp.setText("ChÆ°a láº¥y Ä‘Æ°á»£c IP"));
+                      }
+                  }).start();
+              }
+
+              private void changeIp() {
+                  btnChangeIp.setEnabled(false);
+                  tvStatus.setText("Äang káº¿t ná»‘i tá»›i modem 192.168.1.1...");
+
+                  new Thread(() -> {
+                      try {
+                          String routerUrl = "https://192.168.1.1";
+
+                          // 1. Get Rand Token
+                          Request r1 = new Request.Builder()
+                              .url(routerUrl + "/asp/GetRandCount.asp")
+                              .post(new FormBody.Builder().build())
+                              .build();
+                          String cnt = client.newCall(r1).execute().body().string().trim();
+
+                          // 2. Login
+                          updateStatus("Äang Ä‘Äƒng nháº­p vÃ o router...");
+                          String pwBase64 = Base64.encodeToString("123456".getBytes(), Base64.NO_WRAP);
+                          FormBody loginBody = new FormBody.Builder()
+                              .add("UserName", "admin")
+                              .add("PassWord", pwBase64)
+                              .add("Language", "english")
+                              .add("x.X_HW_Token", cnt)
+                              .build();
+                          Request r2 = new Request.Builder()
+                              .url(routerUrl + "/login.cgi")
+                              .addHeader("Cookie", "Cookie=body:Language:english:id=-1")
+                              .post(loginBody)
+                              .build();
+                          client.newCall(r2).execute();
+
+                          // 3. Reset PPPoE (Enable=0)
+                          updateStatus("Äang ngáº¯t káº¿t ná»‘i PPPoE...");
+                          Request rToken1 = new Request.Builder()
+                              .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                              .post(new FormBody.Builder().build())
+                              .build();
+                          String t1 = client.newCall(rToken1).execute().body().string().trim();
+
+                          String wanDomain = "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1";
+                          String setUrl = routerUrl + "/set.cgi?x=" + wanDomain + "&RequestFile=html/bbsp/wan/wan.asp";
+
+                          Request rDisable = new Request.Builder()
+                              .url(setUrl)
+                              .post(new FormBody.Builder().add("x.Enable", "0").add("x.X_HW_Token", t1).build())
+                              .build();
+                          client.newCall(rDisable).execute();
+
+                          Thread.sleep(2000);
+
+                          // 4. Connect PPPoE (Enable=1)
+                          updateStatus("Äang kÃ­ch hoáº¡t PPPoE nháº­n IP má»›i...");
+                          Request rToken2 = new Request.Builder()
+                              .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                              .post(new FormBody.Builder().build())
+                              .build();
+                          String t2 = client.newCall(rToken2).execute().body().string().trim();
+
+                          Request rEnable = new Request.Builder()
+                              .url(setUrl)
+                              .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", t2).build())
+                              .build();
+                          client.newCall(rEnable).execute();
+
+                          updateStatus("Äang chá» Viettel cáº¥p IP má»›i...");
+                          Thread.sleep(5000);
+
+                          loadCurrentIp();
+                          updateStatus("âœ… Äá»”I IP THÃ€NH CÃ”NG!");
+                      } catch (Exception e) {
+                          updateStatus("âŒ Lá»—i: " + e.getMessage());
+                      } finally {
+                          handler.post(() -> btnChangeIp.setEnabled(true));
+                      }
+                  }).start();
+              }
+
+              private void updateStatus(String msg) {
+                  handler.post(() -> tvStatus.setText(msg));
+              }
+          }
+          EOF
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DoiIPRouter-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        with:
+          tag_name: v1.0.0
+          name: "Doi IP Router v1.0.0"
+          files: app/build/outputs/apk/debug/app-debug.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
