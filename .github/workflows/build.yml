@@ -76,8 +76,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 4
-                  versionName "1.0.3"
+                  versionCode 5
+                  versionName "1.0.4"
               }
 
               buildTypes {
@@ -378,7 +378,6 @@ jobs:
           import java.security.cert.X509Certificate;
           import java.text.SimpleDateFormat;
           import java.util.Date;
-          import java.util.List;
           import java.util.Locale;
           import java.util.concurrent.TimeUnit;
 
@@ -447,7 +446,7 @@ jobs:
                       client = new OkHttpClient.Builder()
                           .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAll[0])
                           .hostnameVerifier((hostname, session) -> true)
-                          .connectTimeout(4, TimeUnit.SECONDS)
+                          .connectTimeout(5, TimeUnit.SECONDS)
                           .readTimeout(6, TimeUnit.SECONDS)
                           .build();
                   } catch (Exception e) {
@@ -527,15 +526,19 @@ jobs:
                       try {
                           String routerUrl = "https://192.168.1.1";
 
-                          // Phase 1: Authentication
+                          // Phase 1: Get Rand Count (Hex: 0-9 and a-f)
                           appendLog("Đang kết nối trung tâm điều phối Viettel...");
                           Request r1 = new Request.Builder()
                               .url(routerUrl + "/asp/GetRandCount.asp")
                               .post(new FormBody.Builder().build())
                               .build();
                           Response res1 = client.newCall(r1).execute();
-                          String cnt = res1.body().string().replaceAll("[^0-9]", "");
+                          String cnt = res1.body().string().replaceAll("[^a-zA-Z0-9]", "");
+                          if (cnt.isEmpty()) {
+                              throw new Exception("Không nhận được mã xác thực từ modem");
+                          }
 
+                          // Phase 2: Login to router
                           String pwBase64 = Base64.encodeToString("123456".getBytes(), Base64.NO_WRAP);
                           FormBody loginBody = new FormBody.Builder()
                               .add("UserName", "admin")
@@ -551,26 +554,19 @@ jobs:
                           Response res2 = client.newCall(r2).execute();
 
                           String cookieHeader = "";
-                          List<String> setCookies = res2.headers("Set-Cookie");
-                          for (String sc : setCookies) {
-                              if (sc.contains("sid=")) {
-                                  cookieHeader = sc.split(";")[0].trim();
+                          for (int i = 0; i < res2.headers().size(); i++) {
+                              String name = res2.headers().name(i);
+                              String val = res2.headers().value(i);
+                              if (name.equalsIgnoreCase("Set-Cookie") && val.contains("sid=")) {
+                                  cookieHeader = val.split(";")[0].trim();
                                   break;
                               }
                           }
                           if (cookieHeader.isEmpty()) {
-                              for (int i = 0; i < res2.headers().size(); i++) {
-                                  if (res2.headers().name(i).equalsIgnoreCase("Set-Cookie")) {
-                                      String v = res2.headers().value(i);
-                                      if (v.contains("sid=")) {
-                                          cookieHeader = v.split(";")[0].trim();
-                                          break;
-                                      }
-                                  }
-                              }
+                              throw new Exception("Xác thực modem thất bại, vui lòng kiểm tra kết nối");
                           }
 
-                          // Phase 2: WAN Disconnect
+                          // Phase 3: WAN Disconnect
                           appendLog("Đang giải phóng phiên kết nối mạng...");
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
@@ -588,11 +584,13 @@ jobs:
                               .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().add("x.Enable", "0").add("x.X_HW_Token", t1).build())
                               .build();
-                          client.newCall(rDisable).execute();
+                          try {
+                              client.newCall(rDisable).execute().close();
+                          } catch (Exception ignored) {}
 
                           Thread.sleep(2500);
 
-                          // Phase 3: WAN Reconnect
+                          // Phase 4: WAN Reconnect (Guaranteed to run)
                           appendLog("Đang gửi yêu cầu cấp phát dải IP mới từ Viettel...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
@@ -607,17 +605,19 @@ jobs:
                               .addHeader("Cookie", cookieHeader)
                               .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", t2).build())
                               .build();
-                          client.newCall(rEnable).execute();
+                          try {
+                              client.newCall(rEnable).execute().close();
+                          } catch (Exception ignored) {}
 
                           appendLog("Đang đồng bộ tuyến truyền dẫn và thông số mạng...");
 
-                          // Phase 4: Wait and Poll until new IP is assigned
+                          // Phase 5: Wait and Poll until new IP is assigned
                           String newIpv4 = null;
                           String newIpv6 = null;
 
-                          for (int attempt = 1; attempt <= 10; attempt++) {
+                          for (int attempt = 1; attempt <= 12; attempt++) {
                               Thread.sleep(2000);
-                              appendLog("Đang kiểm tra tín hiệu trạm mạng Viettel (" + attempt + "/10)...");
+                              appendLog("Đang kiểm tra tín hiệu trạm mạng Viettel (" + attempt + "/12)...");
                               String checkIp = getIpv4();
                               if (!checkIp.equals("Chưa lấy được IP") && !checkIp.equals(originalIpv4)) {
                                   newIpv4 = checkIp;
@@ -626,9 +626,8 @@ jobs:
                               }
                           }
 
-                          if (newIpv4 == null) {
-                              newIpv4 = getIpv4();
-                              newIpv6 = getIpv6();
+                          if (newIpv4 == null || newIpv4.equals(originalIpv4)) {
+                              throw new Exception("Hạ tầng Viettel chưa cấp IP mới, vui lòng bấm thử lại");
                           }
 
                           final String finalIpv4 = newIpv4;
@@ -681,8 +680,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.3
-          name: "Đổi IP Mạng v1.0.3"
+          tag_name: v1.0.4
+          name: "Đổi IP Mạng v1.0.4"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
