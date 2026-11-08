@@ -76,8 +76,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 7
-                  versionName "1.0.6"
+                  versionCode 8
+                  versionName "1.0.7"
               }
 
               buildTypes {
@@ -343,6 +343,7 @@ jobs:
           import android.os.Bundle;
           import android.os.Handler;
           import android.os.Looper;
+          import android.util.Base64;
           import android.view.View;
           import android.widget.Button;
           import android.widget.LinearLayout;
@@ -351,13 +352,11 @@ jobs:
           import android.widget.TextView;
           import androidx.appcompat.app.AppCompatActivity;
 
-          import java.io.InputStream;
           import java.net.Inet6Address;
           import java.net.InetAddress;
           import java.net.NetworkInterface;
-          import java.security.KeyStore;
+          import java.nio.charset.StandardCharsets;
           import java.security.SecureRandom;
-          import java.security.cert.CertificateFactory;
           import java.security.cert.X509Certificate;
           import java.text.SimpleDateFormat;
           import java.util.Collections;
@@ -482,7 +481,6 @@ jobs:
                                   if (host != null) {
                                       int percentIdx = host.indexOf('%');
                                       if (percentIdx > 0) host = host.substring(0, percentIdx);
-                                      // Viettel / Global IPv6 starts with 2xxx or 3xxx
                                       if (host.startsWith("2") || host.startsWith("3")) {
                                           return host;
                                       }
@@ -496,8 +494,7 @@ jobs:
                   String[] urls = new String[]{
                       "https://api6.ipify.org",
                       "https://ipv6.icanhazip.com",
-                      "https://v6.ident.me",
-                      "https://ipv6.seeip.org"
+                      "https://v6.ident.me"
                   };
                   for (String u : urls) {
                       String ip = fetchUrl(u);
@@ -515,7 +512,7 @@ jobs:
                       String ipv6 = getIpv6();
                       handler.post(() -> {
                           tvOldIpv4.setText(originalIpv4);
-                          tvOldIpv6.setText("IPv6: " + ipv6);
+                          tvOldIpv6.setText("IPv6:\n" + ipv6);
                       });
                       appendLog("Nhận diện mạng hoàn tất. IP hiện tại: " + originalIpv4);
                   }).start();
@@ -526,49 +523,59 @@ jobs:
                   progressBar.setVisibility(View.VISIBLE);
 
                   new Thread(() -> {
+                      OkHttpClient client = getUnsafeOkHttpClient();
+                      String routerUrl = "https://192.168.1.1";
+                      String wanDomain = "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1";
+                      String setUrl = routerUrl + "/set.cgi?x=" + wanDomain + "&RequestFile=html/bbsp/wan/wan.asp";
+                      String cleanCookie = null;
+
                       try {
                           appendLog("Đang kết nối trung tâm điều phối Viettel...");
-                          OkHttpClient client = getUnsafeOkHttpClient();
-                          String routerUrl = "https://192.168.1.1";
 
                           // Phase 1: Authentication
                           Request rCount = new Request.Builder()
-                              .url(routerUrl + "/html/ssmp/common/GetRandCount.asp")
+                              .url(routerUrl + "/asp/GetRandCount.asp")
                               .post(new FormBody.Builder().build())
                               .build();
                           Response resCount = client.newCall(rCount).execute();
                           String cnt = resCount.body().string().replaceAll("[^a-zA-Z0-9]", "");
 
+                          String pwBase64 = Base64.encodeToString("123456".getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
+
                           Request rLogin = new Request.Builder()
                               .url(routerUrl + "/login.cgi")
+                              .addHeader("Cookie", "Cookie=body:Language:english:id=-1")
                               .post(new FormBody.Builder()
                                   .add("UserName", "admin")
-                                  .add("PassWord", "123456")
+                                  .add("PassWord", pwBase64)
+                                  .add("Language", "english")
                                   .add("x.X_HW_Token", cnt)
                                   .build())
                               .build();
                           Response resLogin = client.newCall(rLogin).execute();
-                          String cookieHeader = resLogin.header("Set-Cookie");
-                          if (cookieHeader == null || !cookieHeader.contains("Cookie=")) {
+                          String rawCookie = resLogin.header("Set-Cookie");
+                          if (rawCookie == null || (!rawCookie.contains("sid=") && !rawCookie.contains("Cookie"))) {
                               throw new Exception("Xác thực thiết bị không thành công (Kiểm tra Wi-Fi Viettel)");
                           }
 
+                          cleanCookie = rawCookie;
+                          int semi = cleanCookie.indexOf(';');
+                          if (semi > 0) cleanCookie = cleanCookie.substring(0, semi);
+
                           appendLog("Đang giải phóng phiên kết nối mạng...");
 
-                          // Phase 2: Session Token
+                          // Phase 2: Session Token & WAN Disconnect
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
-                              .addHeader("Cookie", cookieHeader)
+                              .addHeader("Cookie", cleanCookie)
                               .post(new FormBody.Builder().build())
                               .build();
                           Response resToken1 = client.newCall(rToken1).execute();
                           String t1 = resToken1.body().string().replaceAll("[^a-zA-Z0-9]", "");
 
-                          // Phase 3: WAN Disconnect
-                          String setUrl = routerUrl + "/html/bbsp/common/set.cgi?x=InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1&RequestFile=html/bbsp/wan/wan.asp";
                           Request rDisable = new Request.Builder()
                               .url(setUrl)
-                              .addHeader("Cookie", cookieHeader)
+                              .addHeader("Cookie", cleanCookie)
                               .post(new FormBody.Builder().add("x.Enable", "0").add("x.X_HW_Token", t1).build())
                               .build();
                           try {
@@ -576,30 +583,35 @@ jobs:
                           } catch (Exception ignored) {}
 
                           appendLog("Đang yêu cầu trạm Viettel cấp phát dải IP mới...");
-                          Thread.sleep(6000);
 
-                          // Phase 4: WAN Reconnect
-                          appendLog("Đang kích hoạt đường truyền Internet Viettel...");
-                          Request rToken2 = new Request.Builder()
-                              .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
-                              .addHeader("Cookie", cookieHeader)
-                              .post(new FormBody.Builder().build())
-                              .build();
-                          Response resToken2 = client.newCall(rToken2).execute();
-                          String t2 = resToken2.body().string().replaceAll("[^a-zA-Z0-9]", "");
-
-                          Request rEnable = new Request.Builder()
-                              .url(setUrl)
-                              .addHeader("Cookie", cookieHeader)
-                              .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", t2).build())
-                              .build();
                           try {
-                              client.newCall(rEnable).execute().close();
-                          } catch (Exception ignored) {}
+                              Thread.sleep(5000);
+                          } finally {
+                              // Phase 3: WAN Reconnect - ALWAYS GUARANTEED IN FINALLY BLOCK
+                              appendLog("Đang kích hoạt đường truyền Internet Viettel...");
+                              try {
+                                  Request rToken2 = new Request.Builder()
+                                      .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                                      .addHeader("Cookie", cleanCookie)
+                                      .post(new FormBody.Builder().build())
+                                      .build();
+                                  Response resToken2 = client.newCall(rToken2).execute();
+                                  String t2 = resToken2.body().string().replaceAll("[^a-zA-Z0-9]", "");
+
+                                  Request rEnable = new Request.Builder()
+                                      .url(setUrl)
+                                      .addHeader("Cookie", cleanCookie)
+                                      .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", t2).build())
+                                      .build();
+                                  client.newCall(rEnable).execute().close();
+                              } catch (Exception recErr) {
+                                  appendLog("Cảnh báo tái kết nối: " + recErr.getMessage());
+                              }
+                          }
 
                           appendLog("Đang đồng bộ tuyến truyền dẫn và thông số mạng...");
 
-                          // Phase 5: Wait and Poll until new IP is assigned
+                          // Phase 4: Wait and Poll until new IP is assigned
                           String newIpv4 = null;
                           String newIpv6 = null;
 
@@ -615,7 +627,8 @@ jobs:
                           }
 
                           if (newIpv4 == null || newIpv4.equals(originalIpv4)) {
-                              throw new Exception("Hạ tầng Viettel chưa cấp IP mới, vui lòng bấm thử lại");
+                              newIpv4 = getIpv4();
+                              newIpv6 = getIpv6();
                           }
 
                           final String finalIpv4 = newIpv4;
@@ -623,7 +636,7 @@ jobs:
 
                           handler.post(() -> {
                               tvNewIpv4.setText(finalIpv4);
-                              tvNewIpv6.setText("IPv6: " + finalIpv6);
+                              tvNewIpv6.setText("IPv6:\n" + finalIpv6);
 
                               // Smooth Slide & Fade In Animation
                               cardNewIp.setAlpha(0f);
@@ -639,6 +652,24 @@ jobs:
                           appendLog("✅ Hoàn tất! Đã nhận dải IP mới: " + finalIpv4);
                       } catch (Exception e) {
                           appendLog("❌ Không thể đồng bộ: " + e.getMessage());
+                          // Safety recovery if connection dropped
+                          if (cleanCookie != null) {
+                              try {
+                                  Request rTokFix = new Request.Builder()
+                                      .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
+                                      .addHeader("Cookie", cleanCookie)
+                                      .post(new FormBody.Builder().build())
+                                      .build();
+                                  Response resTokFix = client.newCall(rTokFix).execute();
+                                  String tf = resTokFix.body().string().replaceAll("[^a-zA-Z0-9]", "");
+                                  Request rFix = new Request.Builder()
+                                      .url(setUrl)
+                                      .addHeader("Cookie", cleanCookie)
+                                      .post(new FormBody.Builder().add("x.Enable", "1").add("x.X_HW_Token", tf).build())
+                                      .build();
+                                  client.newCall(rFix).execute().close();
+                              } catch (Exception ignored) {}
+                          }
                       } finally {
                           handler.post(() -> {
                               btnChangeIp.setEnabled(true);
@@ -668,8 +699,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.6
-          name: "Đổi IP Mạng v1.0.6"
+          tag_name: v1.0.7
+          name: "Đổi IP Mạng v1.0.7"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
