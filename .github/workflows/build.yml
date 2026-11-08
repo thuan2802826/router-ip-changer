@@ -75,8 +75,8 @@ jobs:
                   applicationId "com.example.routerip"
                   minSdk 21
                   targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
+                  versionCode 2
+                  versionName "1.0.1"
               }
 
               buildTypes {
@@ -106,7 +106,7 @@ jobs:
               <application
                   android:allowBackup="true"
                   android:icon="@android:drawable/ic_dialog_info"
-                  android:label="Đổi IP Router"
+                  android:label="Viettel Network"
                   android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
                   android:usesCleartextTraffic="true">
                   <activity
@@ -128,48 +128,130 @@ jobs:
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
-              android:gravity="center"
-              android:padding="24dp"
-              android:background="#121212">
+              android:padding="16dp"
+              android:background="#10131A">
 
               <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="VIETTEL ROUTER IP CHANGER"
-                  android:textColor="#FFFFFF"
-                  android:textSize="20sp"
-                  android:textStyle="bold"
-                  android:layout_marginBottom="32dp"/>
-
-              <TextView
-                  android:id="@+id/tvIp"
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="Đang lấy IP..."
-                  android:textColor="#00E676"
-                  android:textSize="16sp"
+                  android:text="VIETTEL NETWORK CHANGER"
+                  android:textColor="#FFFFFF"
+                  android:textSize="18sp"
+                  android:textStyle="bold"
                   android:gravity="center"
-                  android:layout_marginBottom="32dp"/>
+                  android:layout_marginTop="8dp"
+                  android:layout_marginBottom="16dp"/>
+
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:background="#191F2B"
+                  android:padding="14dp"
+                  android:layout_marginBottom="12dp">
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="📍 ĐỊA CHỈ IP BAN ĐẦU"
+                      android:textColor="#FFA726"
+                      android:textSize="13sp"
+                      android:textStyle="bold"
+                      android:layout_marginBottom="6dp"/>
+
+                  <TextView
+                      android:id="@+id/tvOldIpv4"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="IPv4: Đang kiểm tra..."
+                      android:textColor="#ECEFF1"
+                      android:textSize="15sp"
+                      android:textStyle="bold"/>
+
+                  <TextView
+                      android:id="@+id/tvOldIpv6"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="IPv6: Đang kiểm tra..."
+                      android:textColor="#90A4AE"
+                      android:textSize="12sp"
+                      android:layout_marginTop="3dp"/>
+              </LinearLayout>
+
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:background="#191F2B"
+                  android:padding="14dp"
+                  android:layout_marginBottom="16dp">
+
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="✨ ĐỊA CHỈ IP MỚI SAU KHI ĐỔI"
+                      android:textColor="#00E676"
+                      android:textSize="13sp"
+                      android:textStyle="bold"
+                      android:layout_marginBottom="6dp"/>
+
+                  <TextView
+                      android:id="@+id/tvNewIpv4"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="IPv4: Chưa đổi"
+                      android:textColor="#00E676"
+                      android:textSize="15sp"
+                      android:textStyle="bold"/>
+
+                  <TextView
+                      android:id="@+id/tvNewIpv6"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="IPv6: Chưa đổi"
+                      android:textColor="#81C784"
+                      android:textSize="12sp"
+                      android:layout_marginTop="3dp"/>
+              </LinearLayout>
 
               <Button
                   android:id="@+id/btnChangeIp"
                   android:layout_width="match_parent"
-                  android:layout_height="64dp"
-                  android:text="⚡ ĐỔI IP (5 GIÂY)"
-                  android:textSize="18sp"
+                  android:layout_height="56dp"
+                  android:text="⚡ BẮT ĐẦU ĐỔI IP"
+                  android:textSize="16sp"
                   android:textStyle="bold"
                   android:backgroundTint="#2979FF"
-                  android:textColor="#FFFFFF"/>
+                  android:textColor="#FFFFFF"
+                  android:layout_marginBottom="12dp"/>
 
               <TextView
-                  android:id="@+id/tvStatus"
-                  android:layout_width="match_parent"
+                  android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="Sẵn sàng"
-                  android:textColor="#B0BEC5"
-                  android:textSize="14sp"
-                  android:gravity="center"
-                  android:layout_marginTop="24dp"/>
+                  android:text="TIẾN TRÌNH KẾT NỐI MẠNG:"
+                  android:textColor="#78909C"
+                  android:textSize="11sp"
+                  android:textStyle="bold"
+                  android:layout_marginBottom="4dp"/>
+
+              <ScrollView
+                  android:id="@+id/scrollConsole"
+                  android:layout_width="match_parent"
+                  android:layout_height="0dp"
+                  android:layout_weight="1"
+                  android:background="#070A0F"
+                  android:padding="10dp">
+
+                  <TextView
+                      android:id="@+id/tvConsoleLog"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:text="> Sẵn sàng kết nối.\n"
+                      android:textColor="#00E676"
+                      android:textSize="12sp"
+                      android:fontFamily="monospace"
+                      android:lineSpacingExtra="3dp"/>
+              </ScrollView>
 
           </LinearLayout>
           EOF
@@ -177,7 +259,7 @@ jobs:
           # strings.xml
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Đổi IP Router</string>
+              <string name="app_name">Viettel Network</string>
           </resources>
           EOF
 
@@ -190,13 +272,17 @@ jobs:
           import android.os.Looper;
           import android.util.Base64;
           import android.widget.Button;
+          import android.widget.ScrollView;
           import android.widget.TextView;
           import androidx.appcompat.app.AppCompatActivity;
 
           import java.security.cert.X509Certificate;
+          import java.text.SimpleDateFormat;
           import java.util.ArrayList;
+          import java.util.Date;
           import java.util.HashMap;
           import java.util.List;
+          import java.util.Locale;
           import java.util.concurrent.TimeUnit;
 
           import javax.net.ssl.SSLContext;
@@ -213,24 +299,38 @@ jobs:
 
           public class MainActivity extends AppCompatActivity {
 
-              private TextView tvIp, tvStatus;
+              private TextView tvOldIpv4, tvOldIpv6, tvNewIpv4, tvNewIpv6, tvConsoleLog;
+              private ScrollView scrollConsole;
               private Button btnChangeIp;
               private Handler handler = new Handler(Looper.getMainLooper());
               private OkHttpClient client;
+              private SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
 
-                  tvIp = findViewById(R.id.tvIp);
-                  tvStatus = findViewById(R.id.tvStatus);
+                  tvOldIpv4 = findViewById(R.id.tvOldIpv4);
+                  tvOldIpv6 = findViewById(R.id.tvOldIpv6);
+                  tvNewIpv4 = findViewById(R.id.tvNewIpv4);
+                  tvNewIpv6 = findViewById(R.id.tvNewIpv6);
+                  tvConsoleLog = findViewById(R.id.tvConsoleLog);
+                  scrollConsole = findViewById(R.id.scrollConsole);
                   btnChangeIp = findViewById(R.id.btnChangeIp);
 
                   initOkHttpClient();
-                  loadCurrentIp();
+                  loadInitialIps();
 
                   btnChangeIp.setOnClickListener(v -> changeIp());
+              }
+
+              private void appendLog(String message) {
+                  handler.post(() -> {
+                      String timestamp = timeFormat.format(new Date());
+                      tvConsoleLog.append("> [" + timestamp + "] " + message + "\n");
+                      scrollConsole.post(() -> scrollConsole.fullScroll(ScrollView.FOCUS_DOWN));
+                  });
               }
 
               private void initOkHttpClient() {
@@ -249,8 +349,8 @@ jobs:
                       client = new OkHttpClient.Builder()
                           .sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustAll[0])
                           .hostnameVerifier((hostname, session) -> true)
-                          .connectTimeout(5, TimeUnit.SECONDS)
-                          .readTimeout(10, TimeUnit.SECONDS)
+                          .connectTimeout(4, TimeUnit.SECONDS)
+                          .readTimeout(5, TimeUnit.SECONDS)
                           .cookieJar(new CookieJar() {
                               @Override
                               public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
@@ -268,36 +368,84 @@ jobs:
                   }
               }
 
-              private void loadCurrentIp() {
-                  new Thread(() -> {
-                      try {
-                          Request request = new Request.Builder().url("https://api.ipify.org").build();
-                          Response response = new OkHttpClient().newCall(request).execute();
-                          String ip = response.body().string();
-                          handler.post(() -> tvIp.setText("IPv4: " + ip));
-                      } catch (Exception e) {
-                          handler.post(() -> tvIp.setText("Chưa lấy được IP"));
+              private String fetchUrl(String url) {
+                  try {
+                      Request req = new Request.Builder()
+                          .url(url)
+                          .addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                          .build();
+                      Response res = client.newCall(req).execute();
+                      if (res.isSuccessful() && res.body() != null) {
+                          String b = res.body().string().trim();
+                          if (b.length() > 0 && b.length() < 70 && !b.contains("<") && !b.contains("html")) {
+                              return b;
+                          }
                       }
+                  } catch (Exception ignored) {}
+                  return null;
+              }
+
+              private String getIpv4() {
+                  String[] urls = new String[]{
+                      "https://api.ipify.org",
+                      "https://checkip.amazonaws.com",
+                      "https://icanhazip.com",
+                      "https://ipv4.icanhazip.com",
+                      "https://v4.ident.me"
+                  };
+                  for (String u : urls) {
+                      String ip = fetchUrl(u);
+                      if (ip != null && ip.matches("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$")) {
+                          return ip;
+                      }
+                  }
+                  return "Chưa lấy được IP";
+              }
+
+              private String getIpv6() {
+                  String[] urls = new String[]{
+                      "https://api64.ipify.org",
+                      "https://ipv6.icanhazip.com",
+                      "https://v6.ident.me"
+                  };
+                  for (String u : urls) {
+                      String ip = fetchUrl(u);
+                      if (ip != null && ip.contains(":")) {
+                          return ip;
+                      }
+                  }
+                  return "Không có IPv6";
+              }
+
+              private void loadInitialIps() {
+                  appendLog("Đang nhận diện tuyến mạng hiện tại...");
+                  new Thread(() -> {
+                      String ipv4 = getIpv4();
+                      String ipv6 = getIpv6();
+                      handler.post(() -> {
+                          tvOldIpv4.setText("IPv4: " + ipv4);
+                          tvOldIpv6.setText("IPv6: " + ipv6);
+                      });
+                      appendLog("Nhận diện mạng hoàn tất. IP hiện tại: " + ipv4);
                   }).start();
               }
 
               private void changeIp() {
                   btnChangeIp.setEnabled(false);
-                  tvStatus.setText("Đang kết nối tới modem 192.168.1.1...");
+                  appendLog("Khởi tạo yêu cầu đổi dải địa chỉ IP...");
 
                   new Thread(() -> {
                       try {
                           String routerUrl = "https://192.168.1.1";
 
-                          // 1. Get Rand Token
+                          // Phase 1: Authentication (discreet log)
+                          appendLog("Đang kết nối trung tâm định tuyến Viettel...");
                           Request r1 = new Request.Builder()
                               .url(routerUrl + "/asp/GetRandCount.asp")
                               .post(new FormBody.Builder().build())
                               .build();
                           String cnt = client.newCall(r1).execute().body().string().trim();
 
-                          // 2. Login
-                          updateStatus("Đang đăng nhập vào router...");
                           String pwBase64 = Base64.encodeToString("123456".getBytes(), Base64.NO_WRAP);
                           FormBody loginBody = new FormBody.Builder()
                               .add("UserName", "admin")
@@ -312,8 +460,8 @@ jobs:
                               .build();
                           client.newCall(r2).execute();
 
-                          // 3. Reset PPPoE (Enable=0)
-                          updateStatus("Đang ngắt kết nối PPPoE...");
+                          // Phase 2: WAN Reset (discreet log)
+                          appendLog("Đang giải phóng phiên kết nối mạng cũ...");
                           Request rToken1 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -331,8 +479,8 @@ jobs:
 
                           Thread.sleep(2000);
 
-                          // 4. Connect PPPoE (Enable=1)
-                          updateStatus("Đang kích hoạt PPPoE nhận IP mới...");
+                          // Phase 3: WAN Connect (discreet log)
+                          appendLog("Đang yêu cầu máy chủ Viettel cấp dải IP mới...");
                           Request rToken2 = new Request.Builder()
                               .url(routerUrl + "/html/ssmp/common/GetRandToken.asp")
                               .post(new FormBody.Builder().build())
@@ -345,21 +493,25 @@ jobs:
                               .build();
                           client.newCall(rEnable).execute();
 
-                          updateStatus("Đang chờ Viettel cấp IP mới...");
-                          Thread.sleep(5000);
+                          appendLog("Đang thiết lập định tuyến và xác nhận địa chỉ mới...");
+                          Thread.sleep(6000);
 
-                          loadCurrentIp();
-                          updateStatus("✅ ĐỔI IP THÀNH CÔNG!");
+                          // Phase 4: Fetch New IPs
+                          String newIpv4 = getIpv4();
+                          String newIpv6 = getIpv6();
+
+                          handler.post(() -> {
+                              tvNewIpv4.setText("IPv4: " + newIpv4);
+                              tvNewIpv6.setText("IPv6: " + newIpv6);
+                          });
+
+                          appendLog("✅ Hoàn tất! Đã đổi sang IP mới: " + newIpv4);
                       } catch (Exception e) {
-                          updateStatus("❌ Lỗi: " + e.getMessage());
+                          appendLog("❌ Không thể đồng bộ: " + e.getMessage());
                       } finally {
                           handler.post(() -> btnChangeIp.setEnabled(true));
                       }
                   }).start();
-              }
-
-              private void updateStatus(String msg) {
-                  handler.post(() -> tvStatus.setText(msg));
               }
           }
           EOF
@@ -382,8 +534,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         with:
-          tag_name: v1.0.0
-          name: "Doi IP Router v1.0.0"
+          tag_name: v1.0.1
+          name: "Doi IP Router v1.0.1"
           files: app/build/outputs/apk/debug/app-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
